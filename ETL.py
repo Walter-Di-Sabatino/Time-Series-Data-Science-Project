@@ -1,8 +1,7 @@
-# ETL.py
 import pandas as pd
+import holidays
 
 def ETL(df):
-
     # Rimuove i duplicati direttamente sul DataFrame originale
     df.drop_duplicates(inplace=True)
 
@@ -14,13 +13,26 @@ def ETL(df):
     # Imposta a zero i valori delle colonne specificate se DEP_DELAY <= 0
     df.loc[df['DEP_DELAY'] <= 0, cols_to_zero] = 0
 
-    df.FL_DATE = pd.to_datetime(df.FL_DATE)
+    df.loc[:, 'FL_DATE'] = pd.to_datetime(df['FL_DATE'])
 
-    df["FL_MON"] = df.FL_DATE.apply(lambda x: x.month)
-    df["FL_DAY"] = df.FL_DATE.apply(lambda x: x.day)
-    df["FL_YEAR"] = df.FL_DATE.apply(lambda x: x.year)
-    df["FL_DOW"] = df.FL_DATE.apply(lambda x: x.dayofweek)
-    
-    df.drop(columns=['FL_DATE','Unnamed: 27'], inplace=True)
+    df.loc[:, 'FL_MON'] = df['FL_DATE'].apply(lambda x: x.month)
+    df.loc[:, 'FL_DAY'] = df['FL_DATE'].apply(lambda x: x.day)
+    df.loc[:, 'FL_YEAR'] = df['FL_DATE'].apply(lambda x: x.year)
+    df.loc[:, 'FL_DOW'] = df['FL_DATE'].apply(lambda x: x.dayofweek)
+
+    df['CANCELLATION_REASON'] = df['CANCELLATION_CODE'].replace({
+        'A': 'Airline/Carrier',
+        'B': 'Weather',
+        'C': 'National Air System',
+        'D': 'Security'
+    })
+
+    # Create a list of US holidays per year
+    us_holidays = holidays.US(years=df["FL_YEAR"].unique().tolist())
+
+    # Create the IS_HOLIDAY column
+    df['IS_HOLIDAY'] = df['FL_DATE'].apply(lambda x: 1 if x in us_holidays else 0)
+
+    df.drop(columns=['FL_DATE', 'Unnamed: 27', 'CANCELLATION_CODE'], inplace=True)
     
     return df
