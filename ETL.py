@@ -34,6 +34,8 @@ def ETL(df):
         lambda x: pd.Series(parse_crs_dep_time(x))
     )
 
+    df['ACTUAL_TO_CRS_ELAPSED_RATIO'] = df['ACTUAL_ELAPSED_TIME'] / df['CRS_ELAPSED_TIME']
+
     df['CANCELLATION_REASON'] = df['CANCELLATION_CODE'].replace({
         'A': 'Airline/Carrier',
         'B': 'Weather',
