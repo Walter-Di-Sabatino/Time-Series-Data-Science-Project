@@ -20,6 +20,20 @@ def ETL(df):
     df.loc[:, 'FL_YEAR'] = df['FL_DATE'].apply(lambda x: x.year)
     df.loc[:, 'FL_DOW'] = df['FL_DATE'].apply(lambda x: x.dayofweek)
 
+    def parse_crs_dep_time(time):
+        try:
+            # Gestisce input di tipo numerico o stringa
+            time_str = str(int(float(time))).zfill(4)  # Converte in float, poi in intero per rimuovere il decimale
+            return int(time_str[:2]), int(time_str[2:])  # Estrae ora e minuti
+        except (ValueError, TypeError):
+            # Restituisce None per valori non validi
+            return None, None
+
+    # Applica la funzione per estrarre ora e minuti
+    df[['CRS_DEP_HOUR', 'CRS_DEP_MIN']] = df['CRS_DEP_TIME'].apply(
+        lambda x: pd.Series(parse_crs_dep_time(x))
+    )
+
     df['CANCELLATION_REASON'] = df['CANCELLATION_CODE'].replace({
         'A': 'Airline/Carrier',
         'B': 'Weather',
