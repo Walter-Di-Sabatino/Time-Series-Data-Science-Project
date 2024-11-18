@@ -5,7 +5,7 @@ def ETL(df):
     """Funzione principale ETL che richiama le sottofunzioni."""
     cols_to_zero = ['CARRIER_DELAY', 'WEATHER_DELAY', 'NAS_DELAY', 'SECURITY_DELAY','LATE_AIRCRAFT_DELAY']
     time_columns = ['CRS_DEP_TIME', 'DEP_TIME', 'WHEELS_OFF', 'WHEELS_ON', 'CRS_ARR_TIME', 'ARR_TIME']
-    drop_columns = ['FL_DATE', 'Unnamed: 27', 'CANCELLATION_CODE'] + time_columns  + cols_to_zero
+    drop_columns = ['FL_DATE', 'Unnamed: 27', 'CANCELLATION_CODE']  + cols_to_zero # + time_columns
 
     df.drop_duplicates(inplace=True)
 
@@ -19,7 +19,7 @@ def ETL(df):
     df = process_date_columns(df)
     
     # Processa colonne temporali
-    df = process_time_columns(df, time_columns)
+    #df = process_time_columns(df, time_columns)
     
     # Calcola rapporto tra tempi reali e pianificati
     df['ACT_TO_CRS_RATIO'] = df['ACTUAL_ELAPSED_TIME'] / df['CRS_ELAPSED_TIME']
