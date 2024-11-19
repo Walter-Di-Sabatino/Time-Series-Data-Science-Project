@@ -27,10 +27,6 @@ def ETL(df):
     # Aggiunge motivo di cancellazione
     df = add_cancellation_reason(df)
     
-    # Aggiunge colonna per festività
-    # df = add_holiday_column(df)
-
-
     # Rimuove colonne inutili
     df = clean_and_drop_columns(df, drop_columns)
     
@@ -83,16 +79,10 @@ def add_cancellation_reason(df):
     }
     
     # Gestione dei NaN
-    df['CANCELLATION_REASON'] = df['CANCELLATION_CODE'].map(cancellation_map)
-    df['CANCELLATION_REASON'] = df['CANCELLATION_REASON'].fillna('Not cancelled')
+    df['C_REASON'] = df['CANCELLATION_CODE'].map(cancellation_map)
+    df['C_REASON'] = df['C_REASON'].fillna('Not cancelled')
 
     
-    return df
-
-def add_holiday_column(df):
-    """Aggiunge una colonna che indica se la data è una festività."""
-    us_holidays = holidays.US(years=df["FL_YEAR"].unique())
-    df['IS_HOLIDAY'] = df['FL_DATE'].isin(us_holidays).astype(int)
     return df
 
 def clean_and_drop_columns(df, drop_columns):
