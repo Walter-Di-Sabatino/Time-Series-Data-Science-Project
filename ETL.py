@@ -4,8 +4,8 @@ import holidays
 def ETL(df):
     """Funzione principale ETL che richiama le sottofunzioni."""
     drop_columns = [
-        'FL_DATE', 'Unnamed: 27', 'CANCELLATION_CODE','CARRIER_DELAY', 
-        'WEATHER_DELAY', 'NAS_DELAY', 'SECURITY_DELAY','LATE_AIRCRAFT_DELAY'
+        'Unnamed: 27', 'CARRIER_DELAY', 'WEATHER_DELAY',
+        'NAS_DELAY', 'SECURITY_DELAY','LATE_AIRCRAFT_DELAY'
     ] 
     
     df.drop_duplicates(inplace=True)
@@ -40,6 +40,7 @@ def process_date_columns(df):
         FL_YEAR=df['FL_DATE'].dt.year,
         FL_DOW=df['FL_DATE'].dt.dayofweek
     )
+    df = clean_and_drop_columns(df, ['FL_DATE'])
     return df
 
 def add_cancellation_reason(df):
@@ -55,6 +56,7 @@ def add_cancellation_reason(df):
     df['C_REASON'] = df['CANCELLATION_CODE'].map(cancellation_map)
     df['C_REASON'] = df['C_REASON'].fillna('Not cancelled')
 
+    df = clean_and_drop_columns(df, ['CANCELLATION_CODE'])
     return df
 
 def clean_and_drop_columns(df, drop_columns):
