@@ -1,38 +1,71 @@
 import pandas as pd
-import holidays
 
 def ETL(df):
-    # Rimuove i duplicati direttamente sul DataFrame originale
+    """Funzione principale ETL che richiama le sottofunzioni."""
+    drop_columns = [
+        'Unnamed: 27', 'CARRIER_DELAY', 'WEATHER_DELAY',
+        'NAS_DELAY', 'SECURITY_DELAY','LATE_AIRCRAFT_DELAY'
+    ] 
+    
     df.drop_duplicates(inplace=True)
 
-    cols_to_zero = ['CARRIER_DELAY', 'WEATHER_DELAY', 'NAS_DELAY', 'SECURITY_DELAY', 'LATE_AIRCRAFT_DELAY']
+    # Gestisce voli deviati
+    df = handle_diverted_flights(df)
 
-    # Filtra ed elimina le righe dove DEP_DELAY > 0 e ci sono NaN nelle colonne specificate
-    df = df[~((df['DEP_DELAY'] > 0) & (df[cols_to_zero].isna().any(axis=1)))]
+    # Processa colonne relative alla data
+    df = process_date_columns(df)
+    
+    # Calcola rapporto tra tempi reali e pianificati
+    df['ACT_TO_CRS_RATIO'] = df['ACTUAL_ELAPSED_TIME'] / df['CRS_ELAPSED_TIME']
+    
+    # Aggiunge motivo di cancellazione
+    df = add_cancellation_reason(df)
+    
+    # Rimuove colonne inutili
+    df = clean_and_drop_columns(df, drop_columns)
 
-    # Imposta a zero i valori delle colonne specificate se DEP_DELAY <= 0
-    df.loc[df['DEP_DELAY'] <= 0, cols_to_zero] = 0
+    df.fillna(0, inplace=True)
 
-    df.loc[:, 'FL_DATE'] = pd.to_datetime(df['FL_DATE'])
+    return df
 
-    df.loc[:, 'FL_MON'] = df['FL_DATE'].apply(lambda x: x.month)
-    df.loc[:, 'FL_DAY'] = df['FL_DATE'].apply(lambda x: x.day)
-    df.loc[:, 'FL_YEAR'] = df['FL_DATE'].apply(lambda x: x.year)
-    df.loc[:, 'FL_DOW'] = df['FL_DATE'].apply(lambda x: x.dayofweek)
+# Sottofunzioni
 
-    df['CANCELLATION_REASON'] = df['CANCELLATION_CODE'].replace({
+def process_date_columns(df):
+    """Crea colonne relative alla data."""
+    df['FL_DATE'] = pd.to_datetime(df['FL_DATE'])
+    df = df.assign(
+        FL_MON=df['FL_DATE'].dt.month,
+        FL_DAY=df['FL_DATE'].dt.day,
+        FL_YEAR=df['FL_DATE'].dt.year,
+        FL_DOW=df['FL_DATE'].dt.dayofweek
+    )
+    df = clean_and_drop_columns(df, ['FL_DATE'])
+    return df
+
+def add_cancellation_reason(df):
+    """Aggiunge la colonna per il motivo di cancellazione, gestendo esplicitamente i NaN."""
+    cancellation_map = {
         'A': 'Airline/Carrier',
         'B': 'Weather',
         'C': 'National Air System',
         'D': 'Security'
-    })
-
-    # Create a list of US holidays per year
-    us_holidays = holidays.US(years=df["FL_YEAR"].unique().tolist())
-
-    # Create the IS_HOLIDAY column
-    df['IS_HOLIDAY'] = df['FL_DATE'].apply(lambda x: 1 if x in us_holidays else 0)
-
-    df.drop(columns=['FL_DATE', 'Unnamed: 27', 'CANCELLATION_CODE'], inplace=True)
+    }
     
+    # Gestione dei NaN
+    df['C_REASON'] = df['CANCELLATION_CODE'].map(cancellation_map)
+    df['C_REASON'] = df['C_REASON'].fillna('Not cancelled')
+
+    df = clean_and_drop_columns(df, ['CANCELLATION_CODE'])
+    return df
+
+def clean_and_drop_columns(df, drop_columns):
+    """Elimina le colonne inutili dal DataFrame."""
+    df.drop(columns=drop_columns, inplace=True)
+    return df
+
+def handle_diverted_flights(df):
+    """Gestisce i voli deviati impostando a zero le colonne specificate per voli deviati e senza motivo di cancellazione."""
+    # Imposta a 0 i valori per i voli deviati
+    df.loc[df['DIVERTED'] == 1, ['ARR_DELAY','AIR_TIME','ACTUAL_ELAPSED_TIME',
+                                 'ACT_TO_CRS_RATIO','CANCELLED', ]] = 0
     return df
