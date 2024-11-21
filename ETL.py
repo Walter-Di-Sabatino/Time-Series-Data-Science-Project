@@ -1,5 +1,4 @@
 import pandas as pd
-import holidays
 
 def ETL(df):
     """Funzione principale ETL che richiama le sottofunzioni."""
