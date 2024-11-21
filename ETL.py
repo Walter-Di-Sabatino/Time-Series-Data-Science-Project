@@ -3,23 +3,18 @@ import holidays
 
 def ETL(df):
     """Funzione principale ETL che richiama le sottofunzioni."""
-    cols_to_zero = ['CARRIER_DELAY', 'WEATHER_DELAY', 'NAS_DELAY', 'SECURITY_DELAY','LATE_AIRCRAFT_DELAY']
-    time_columns = ['CRS_DEP_TIME', 'DEP_TIME', 'WHEELS_OFF', 'WHEELS_ON', 'CRS_ARR_TIME', 'ARR_TIME']
-    drop_columns = ['FL_DATE', 'Unnamed: 27', 'CANCELLATION_CODE']  + cols_to_zero # + time_columns
-
+    drop_columns = [
+        'FL_DATE', 'Unnamed: 27', 'CANCELLATION_CODE','CARRIER_DELAY', 
+        'WEATHER_DELAY', 'NAS_DELAY', 'SECURITY_DELAY','LATE_AIRCRAFT_DELAY'
+    ] 
+    
     df.drop_duplicates(inplace=True)
 
-    # Rimuove duplicati e righe non valide
-    # df = remove_invalid_rows(df, cols_to_zero)
-    
     # Gestisce voli deviati
     df = handle_diverted_flights(df)
 
     # Processa colonne relative alla data
     df = process_date_columns(df)
-    
-    # Processa colonne temporali
-    #df = process_time_columns(df, time_columns)
     
     # Calcola rapporto tra tempi reali e pianificati
     df['ACT_TO_CRS_RATIO'] = df['ACTUAL_ELAPSED_TIME'] / df['CRS_ELAPSED_TIME']
@@ -29,20 +24,12 @@ def ETL(df):
     
     # Rimuove colonne inutili
     df = clean_and_drop_columns(df, drop_columns)
-    
-    
 
     df.fillna(0, inplace=True)
 
     return df
 
 # Sottofunzioni
-
-def remove_invalid_rows(df, cols_to_zero):
-    """Rimuove duplicati e filtra righe con valori non validi."""
-    df = df[~((df['DEP_DELAY'] > 0) & (df[cols_to_zero].isna().any(axis=1)))]
-    df.loc[df['DEP_DELAY'] <= 0, cols_to_zero] = 0
-    return df
 
 def process_date_columns(df):
     """Crea colonne relative alla data."""
@@ -54,20 +41,6 @@ def process_date_columns(df):
         FL_DOW=df['FL_DATE'].dt.dayofweek
     )
     return df
-
-def parse_time_column(column):
-    """Estrae ore e minuti da una colonna di orari."""
-    times = pd.to_numeric(column, errors='coerce').fillna(0).astype(int).astype(str).str.zfill(4)
-    return times.str[:2].astype(int), times.str[2:].astype(int)
-
-def process_time_columns(df, time_columns):
-    """Estrae ore e minuti per le colonne temporali."""
-    for col in time_columns:
-        hours, minutes = parse_time_column(df[col])
-        df[f'{col}_HOUR'], df[f'{col}_MIN'] = hours, minutes
-    return df
-
-import numpy as np
 
 def add_cancellation_reason(df):
     """Aggiunge la colonna per il motivo di cancellazione, gestendo esplicitamente i NaN."""
@@ -82,7 +55,6 @@ def add_cancellation_reason(df):
     df['C_REASON'] = df['CANCELLATION_CODE'].map(cancellation_map)
     df['C_REASON'] = df['C_REASON'].fillna('Not cancelled')
 
-    
     return df
 
 def clean_and_drop_columns(df, drop_columns):
@@ -93,7 +65,6 @@ def clean_and_drop_columns(df, drop_columns):
 def handle_diverted_flights(df):
     """Gestisce i voli deviati impostando a zero le colonne specificate per voli deviati e senza motivo di cancellazione."""
     # Imposta a 0 i valori per i voli deviati
-    df.loc[df['DIVERTED'] == 1, ['ARR_DELAY','AIR_TIME','ACTUAL_ELAPSED_TIME','ACT_TO_CRS_RATIO','CANCELLED', 
-                                 'CARRIER_DELAY', 'WEATHER_DELAY', 'NAS_DELAY', 'SECURITY_DELAY', 
-                                 'LATE_AIRCRAFT_DELAY']] = 0
+    df.loc[df['DIVERTED'] == 1, ['ARR_DELAY','AIR_TIME','ACTUAL_ELAPSED_TIME',
+                                 'ACT_TO_CRS_RATIO','CANCELLED', ]] = 0
     return df
