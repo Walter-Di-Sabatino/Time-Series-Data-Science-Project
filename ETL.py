@@ -39,7 +39,6 @@ def process_date_columns(df):
         FL_YEAR=df['FL_DATE'].dt.year,
         FL_DOW=df['FL_DATE'].dt.dayofweek
     )
-    df = clean_and_drop_columns(df, ['FL_DATE'])
     return df
 
 def add_cancellation_reason(df):
