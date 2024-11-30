@@ -1,16 +1,12 @@
 import pandas as pd
 
 def ETL(df):
-    """Funzione principale ETL che richiama le sottofunzioni."""
     drop_columns = [
         'Unnamed: 27', 'CARRIER_DELAY', 'WEATHER_DELAY',
         'NAS_DELAY', 'SECURITY_DELAY','LATE_AIRCRAFT_DELAY'
     ] 
     
     df.drop_duplicates(inplace=True)
-
-    # Gestisce voli deviati
-    df = handle_diverted_flights(df)
 
     # Processa colonne relative alla data
     df = process_date_columns(df)
@@ -22,13 +18,11 @@ def ETL(df):
     df = add_cancellation_reason(df)
     
     # Rimuove colonne inutili
-    df = clean_and_drop_columns(df, drop_columns)
+    df = df.drop(columns=drop_columns)
 
     df.fillna(0, inplace=True)
 
     return df
-
-# Sottofunzioni
 
 def process_date_columns(df):
     """Crea colonne relative alla data."""
@@ -54,17 +48,6 @@ def add_cancellation_reason(df):
     df['C_REASON'] = df['CANCELLATION_CODE'].map(cancellation_map)
     df['C_REASON'] = df['C_REASON'].fillna('Not cancelled')
 
-    df = clean_and_drop_columns(df, ['CANCELLATION_CODE'])
-    return df
+    df = df.drop(columns=['CANCELLATION_CODE'])
 
-def clean_and_drop_columns(df, drop_columns):
-    """Elimina le colonne inutili dal DataFrame."""
-    df.drop(columns=drop_columns, inplace=True)
-    return df
-
-def handle_diverted_flights(df):
-    """Gestisce i voli deviati impostando a zero le colonne specificate per voli deviati e senza motivo di cancellazione."""
-    # Imposta a 0 i valori per i voli deviati
-    df.loc[df['DIVERTED'] == 1, ['ARR_DELAY','AIR_TIME','ACTUAL_ELAPSED_TIME',
-                                 'ACT_TO_CRS_RATIO','CANCELLED', ]] = 0
     return df
