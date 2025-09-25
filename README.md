@@ -1,6 +1,4 @@
 
------
-
 # Time Series, Classification, and Clustering Project
 
 This project analyzes two datasets from Kaggle using different data science approaches.
